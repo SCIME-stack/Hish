@@ -1,4 +1,4 @@
-﻿// =============================================================
+// =============================================================
 // Persistent dashboard top bar.
 // Drop this on any page with:
 //     <script src="topbar.js" defer></script>
@@ -120,6 +120,50 @@
   .topbar-pill-label { display: none; }
 }
 
+
+/* === Dropdown menu (replaces the row of pills) === */
+.topbar { align-items: center; justify-content: space-between; }
+.topbar-menu { position: relative; }
+.topbar-menu-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 9px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 11px; color: #FAFAFA;
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.topbar-menu-btn:hover { background: rgba(255,255,255,0.09); }
+.topbar-menu-caret { transition: transform 0.15s; opacity: 0.7; }
+.topbar-menu.open .topbar-menu-caret { transform: rotate(180deg); }
+.topbar-menu-panel {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  min-width: 230px; padding: 6px;
+  flex-direction: column; gap: 4px;
+  background: #141416;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 13px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  z-index: 50;
+}
+.topbar-menu.open .topbar-menu-panel { display: flex; }
+.topbar-menu-panel .topbar-pill { flex: none; padding: 11px 12px; }
+.topbar-menu-panel .topbar-pill.current { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.08); }
+.topbar-quickwater {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 0 0 0 12px; height: 38px;
+  background: rgba(125,211,252,0.07);
+  border: 1px solid rgba(125,211,252,0.14);
+  border-radius: 11px; overflow: hidden;
+  color: #FAFAFA; text-decoration: none;
+}
+.topbar-quickwater .topbar-pill-label { color: rgba(255,255,255,0.5); }
+.topbar-quickwater .topbar-water-add { height: 100%; border: none; border-left: 1px solid rgba(125,211,252,0.14); }
+@media (max-width: 380px) {
+  .topbar-menu-panel .topbar-pill-label, .topbar-quickwater .topbar-pill-label { display: inline; }
+}
+
 /* === Global mobile lockdown ===
    1) Hide the right-side scrollbar on phones (iOS uses overlay scrollbars anyway).
    2) Stop iOS auto-text-size-adjust.
@@ -168,33 +212,43 @@ body.topbar-modal-open {
 
   // -------- HTML --------
   const html = `
-<header class="topbar" id="topbar" role="navigation" aria-label="Quick stats">
-  <a href="index.html" class="topbar-pill" id="topbarGoals">
-    <span class="topbar-pill-dot"></span>
-    <span class="topbar-pill-label">GOALS</span>
-    <span class="topbar-pill-count" id="topbarGoalsCount">—/—</span>
-  </a>
-  <a href="health.html" class="topbar-pill" id="topbarStack">
-    <span class="topbar-pill-dot"></span>
-    <span class="topbar-pill-label">STACK</span>
-    <span class="topbar-pill-count" id="topbarStackCount">—/—</span>
-  </a>
-  <div class="topbar-water-wrap">
-    <a href="health.html#water" class="topbar-water-pill" id="topbarWater">
-      <span class="topbar-pill-dot"></span>
-      <span class="topbar-pill-label">WATER</span>
-      <span class="topbar-pill-count" id="topbarWaterCount">—/—</span>
-    </a>
+<header class="topbar" id="topbar" role="navigation" aria-label="Pages">
+  <div class="topbar-menu" id="topbarMenu">
+    <button class="topbar-menu-btn" id="topbarMenuBtn" type="button" aria-haspopup="true" aria-expanded="false">
+      <span id="topbarMenuLabel">Menu</span>
+      <span class="topbar-menu-caret">&#9662;</span>
+    </button>
+    <nav class="topbar-menu-panel" id="topbarMenuPanel">
+      <a href="index.html" class="topbar-pill" id="topbarGoals" data-page="index.html" data-name="Goals">
+        <span class="topbar-pill-dot"></span>
+        <span class="topbar-pill-label">GOALS</span>
+        <span class="topbar-pill-count" id="topbarGoalsCount">—/—</span>
+      </a>
+      <a href="health.html" class="topbar-pill" id="topbarStack" data-page="health.html" data-name="Stack">
+        <span class="topbar-pill-dot"></span>
+        <span class="topbar-pill-label">STACK</span>
+        <span class="topbar-pill-count" id="topbarStackCount">—/—</span>
+      </a>
+      <a href="po-water.html" class="topbar-pill" id="topbarWater" data-page="po-water.html" data-name="Water">
+        <span class="topbar-pill-dot" style="background:#7DD3FC"></span>
+        <span class="topbar-pill-label">WATER</span>
+        <span class="topbar-pill-count" id="topbarWaterCount">—/—</span>
+      </a>
+      <a href="gym.html" class="topbar-pill" id="topbarGym" data-page="gym.html" data-name="Gym">
+        <span class="topbar-pill-dot"></span>
+        <span class="topbar-pill-label">GYM</span>
+      </a>
+      <a href="finance.html" class="topbar-pill" id="topbarFinance" data-page="finance.html" data-name="Finance">
+        <span class="topbar-pill-dot"></span>
+        <span class="topbar-pill-label">FINANCE</span>
+      </a>
+    </nav>
+  </div>
+  <div class="topbar-quickwater">
+    <span class="topbar-pill-label">WATER</span>
+    <span class="topbar-pill-count" id="topbarWaterQuick">0/0</span>
     <button class="topbar-water-add" id="topbarWaterAdd" aria-label="Log one drink" type="button">+</button>
   </div>
-  <a href="gym.html" class="topbar-pill" id="topbarGym">
-    <span class="topbar-pill-dot"></span>
-    <span class="topbar-pill-label">GYM</span>
-  </a>
-  <a href="finance.html" class="topbar-pill" id="topbarFinance">
-    <span class="topbar-pill-dot"></span>
-    <span class="topbar-pill-label">FINANCE</span>
-  </a>
 </header>
 `;
 
@@ -306,6 +360,9 @@ body.topbar-modal-open {
     document.getElementById('topbarWaterCount').textContent =
       w.total ? w.done + '/' + w.total : '0/0';
 
+    const q = document.getElementById('topbarWaterQuick');
+    if (q) q.textContent = w.total ? w.done + '/' + w.total : '0/0';
+
     setPillStatus(goalsEl, classifyStatus(g.done, g.total));
     setPillStatus(stackEl, classifyStatus(s.done, s.total));
     setPillStatus(waterEl, classifyStatus(w.done, w.total));
@@ -408,9 +465,33 @@ body.topbar-modal-open {
     sync();
   }
 
+  // -------- Dropdown menu --------
+  function setupMenu() {
+    const menu = document.getElementById('topbarMenu');
+    const btn = document.getElementById('topbarMenuBtn');
+    if (!menu || !btn) return;
+    const file = (location.pathname.split('/').pop() || 'index.html');
+    const page = file === '' ? 'index.html' : file;
+    menu.querySelectorAll('[data-page]').forEach(a => {
+      if (a.dataset.page === page || (page.indexOf('.') === -1 && a.dataset.page === page + '.html')) {
+        a.classList.add('current');
+        document.getElementById('topbarMenuLabel').textContent = a.dataset.name;
+      }
+    });
+    function close() { menu.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = menu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', (e) => { if (!menu.contains(e.target)) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  }
+
   // -------- Boot --------
   function boot() {
     injectStyleAndHTML();
+    setupMenu();
     const btn = document.getElementById('topbarWaterAdd');
     if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); addWater(); });
     render();
