@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>WHOOP</title>
+<script src="topbar.js" defer></script>
+<style>
+:root {
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --good: #6BE3A4;
+  --mid: #F2C063;
+  --low: #FF6B6B;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #050506; color: var(--text-secondary); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; }
+main { max-width: 1100px; margin: 0 auto; padding: 18px 20px 60px; }
+h1 { color: var(--text-primary); font-size: 28px; margin: 6px 0 4px; }
+.sub { font-size: 13px; color: var(--text-tertiary); margin-bottom: 22px; }
+.card { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.big { font-size: 34px; font-weight: 800; color: var(--text-primary); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.big { white-space: nowrap; }
+@media (max-width: 480px) { .big { font-size: 28px; } td { white-space: nowrap; font-size: 12px; } }
+.big small { font-size: 14px; font-weight: 600; color: var(--text-tertiary); margin-left: 3px; }
+.connect { text-align: center; padding: 48px 20px; }
+.connect p { max-width: 420px; margin: 0 auto 22px; line-height: 1.5; }
+.btn { display: inline-block; padding: 12px 22px; border-radius: 12px; background: #FAFAFA; color: #050506; font-weight: 700; text-decoration: none; border: none; cursor: pointer; font-size: 14px; font-family: inherit; }
+.btn.ghost { background: transparent; color: var(--text-tertiary); border: 1px solid rgba(255,255,255,0.12); font-weight: 600; font-size: 12px; padding: 8px 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); padding: 0 8px 10px 0; }
+td { padding: 10px 8px 10px 0; border-top: 1px solid rgba(255,255,255,0.06); font-family: var(--mono); color: var(--text-primary); }
+td:first-child { font-family: var(--font); color: var(--text-secondary); }
+.err { color: var(--low); font-size: 13px; margin-bottom: 14px; }
+.foot { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; font-size: 12px; color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+<main>
+  <h1>WHOOP</h1>
+  <div class="sub" id="sub">Recovery, sleep and strain from your strap</div>
+  <div class="err" id="err" hidden></div>
+  <div id="app"><div class="card connect">Loading…</div></div>
+</main>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const errEl = document.getElementById('err');
+  const CACHE = 'whoop:last';
+
+  const params = new URLSearchParams(location.search);
+  if (params.get('error')) showError('Could not connect: ' + params.get('error'));
+  if (params.toString()) history.replaceState(null, '', location.pathname);
+
+  function showError(msg) { errEl.textContent = msg; errEl.hidden = false; }
+  const day = iso => new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const color = p => p >= 67 ? 'var(--good)' : p >= 34 ? 'var(--mid)' : 'var(--low)';
+  const hm = min => min == null ? '—' : Math.floor(min / 60) + 'h ' + String(min % 60).padStart(2, '0') + 'm';
+  const r1 = n => n == null ? '—' : Math.round(n * 10) / 10;
+
+  function connectView() {
+    app.innerHTML = `<div class="card connect">
+      <p>Connect your WHOOP account to see today's recovery, last night's sleep and your strain here.</p>
+      <a class="btn" href="/api/whoop-login">Connect WHOOP</a></div>`;
+  }
+
+  function render(d, fromCache) {
+    const rec = d.recovery[0], slp = d.sleep[0], str = d.strain[0];
+    const tile = (label, value, unit, c) => `<div class="card"><div class="label">${label}</div>
+      <div class="big" ${c ? `style="color:${c}"` : ''}>${value}<small>${unit || ''}</small></div></div>`;
+
+    // One row per day, newest first
+    const days = {};
+    const key = iso => new Date(iso).toDateString();
+    d.recovery.forEach(r => (days[key(r.at)] ||= { at: r.at }).rec = r.score);
+    d.sleep.forEach(s => (days[key(s.at)] ||= { at: s.at }).sleep = s);
+    d.strain.forEach(s => (days[key(s.at)] ||= { at: s.at }).strain = s.strain);
+    const rows = Object.values(days).sort((a, b) => new Date(b.at) - new Date(a.at)).map(x => `<tr>
+      <td>${day(x.at)}</td>
+      <td style="color:${x.rec != null ? color(x.rec) : 'inherit'}">${x.rec != null ? x.rec + '%' : '—'}</td>
+      <td>${x.sleep ? hm(x.sleep.asleepMin) : '—'}</td>
+      <td>${x.sleep && x.sleep.performance != null ? x.sleep.performance + '%' : '—'}</td>
+      <td>${r1(x.strain)}</td></tr>`).join('');
+
+    app.innerHTML = `
+      <div class="grid">
+        ${tile('Recovery', rec ? rec.score : '—', rec ? '%' : '', rec && color(rec.score))}
+        ${tile('HRV', rec ? Math.round(rec.hrv) : '—', rec ? 'ms' : '')}
+        ${tile('Resting HR', rec ? rec.rhr : '—', rec ? 'bpm' : '')}
+        ${tile('Sleep', slp ? hm(slp.asleepMin) : '—', '')}
+        ${tile('Sleep perf.', slp ? slp.performance : '—', slp ? '%' : '')}
+        ${tile('Strain', str ? r1(str.strain) : '—', '')}
+      </div>
+      <div class="card">
+        <div class="label" style="margin-bottom:12px">Last 7 days</div>
+        <table><thead><tr><th>Day</th><th>Recovery</th><th>Asleep</th><th>Sleep perf.</th><th>Strain</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="5">No scored data yet</td></tr>'}</tbody></table>
+      </div>
+      <div class="foot"><span>${fromCache ? 'Showing saved data — refreshing…' : 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+        <button class="btn ghost" id="logout">Disconnect</button></div>`;
+    document.getElementById('logout').onclick = async () => {
+      await fetch('/api/whoop?logout=1');
+      try { localStorage.removeItem(CACHE); } catch (e) {}
+      connectView();
+    };
+  }
+
+  // Show the last saved numbers instantly, then fetch fresh ones.
+  try { const c = JSON.parse(localStorage.getItem(CACHE)); if (c) render(c, true); } catch (e) {}
+
+  fetch('/api/whoop', { credentials: 'same-origin' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.connected) { if (d.error) showError(d.error); try { localStorage.removeItem(CACHE); } catch (e) {} return connectView(); }
+      if (d.error) return showError(d.error);
+      try { localStorage.setItem(CACHE, JSON.stringify(d)); } catch (e) {}
+      render(d, false);
+    })
+    .catch(() => {
+      if (location.protocol === 'file:') showError('WHOOP only works on your live site (hish-six.vercel.app), not when opening the file directly.');
+      else showError('Could not reach WHOOP right now.');
+      if (!app.querySelector('.grid')) connectView();
+    });
+})();
+</script>
+</body>
+</html>
