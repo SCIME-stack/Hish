@@ -246,6 +246,10 @@ body.topbar-modal-open {
         <span class="topbar-pill-dot" style="background:#F2C063"></span>
         <span class="topbar-pill-label">WHOOP</span>
       </a>
+      <a href="sleep.html" class="topbar-pill" id="topbarSleep" data-page="sleep.html" data-name="Sleep">
+        <span class="topbar-pill-dot" style="background:#8FA8FF"></span>
+        <span class="topbar-pill-label">SLEEP</span>
+      </a>
     </nav>
   </div>
   <div class="topbar-quickwater">
